@@ -43,6 +43,8 @@ var _ = Describe("Apply CRDs", func() {
 
 		marshalutil.MarshallObject(crd, writer)
 		writer.Flush()
+		manifests, err := install.EncodeManifests(b.Bytes())
+		Expect(err).ToNot(HaveOccurred())
 
 		configMap := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
@@ -56,10 +58,11 @@ var _ = Describe("Apply CRDs", func() {
 					v1.InstallStrategyVersionAnnotation:    config.GetKubeVirtVersion(),
 					v1.InstallStrategyRegistryAnnotation:   config.GetImageRegistry(),
 					v1.InstallStrategyIdentifierAnnotation: config.GetDeploymentID(),
+					v1.InstallStrategyConfigMapEncoding:    install.ManifestsEncodingGzipBase64,
 				},
 			},
 			Data: map[string]string{
-				"manifests": string(b.Bytes()),
+				"manifests": manifests,
 			},
 		}
 
