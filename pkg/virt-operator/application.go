@@ -127,6 +127,7 @@ func Execute() {
 
 	log.InitializeLogging("virt-operator")
 
+	_ = os.Setenv(util.OperatorImageEnvName, "registry:5000/kubevirt/virt-operator:devel")
 	err = util.VerifyEnv()
 	if err != nil {
 		golog.Fatal(err)

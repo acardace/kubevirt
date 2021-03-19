@@ -230,6 +230,15 @@ container_push(
 )
 
 container_push(
+    name = "push-virt-operator-debug",
+    format = "Docker",
+    image = "//cmd/virt-operator:virt-operator-image-debug",
+    registry = "$(container_prefix)",
+    repository = "$(image_prefix)virt-operator-debug",
+    tag = "$(container_tag)",
+)
+
+container_push(
     name = "push-virt-handler",
     format = "Docker",
     image = "//cmd/virt-handler:virt-handler-image",

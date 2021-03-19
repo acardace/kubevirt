@@ -16,6 +16,10 @@ go_library(
 go_binary(
     name = "virt-operator",
     embed = [":go_default_library"],
+    gc_goopts = [
+        "-N",
+        "-l",
+    ],
     static = "on",
     visibility = ["//visibility:public"],
 )
@@ -45,6 +49,16 @@ container_image(
         ":virt-operator",
         "//tools/csv-generator",
     ],
+    user = "1001",
+    visibility = ["//visibility:public"],
+)
+
+container_image(
+    name = "virt-operator-image-debug",
+    base = "@dlv//image",
+    directory = "/usr/bin/",
+    files = [":virt-operator"],
+    ports = ["40000"],
     user = "1001",
     visibility = ["//visibility:public"],
 )

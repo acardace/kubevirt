@@ -550,8 +550,9 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 	virtHandlerShaEnv string, virtLauncherShaEnv string) (*appsv1.Deployment, error) {
 
 	podAntiAffinity := newPodAntiAffinity("kubevirt.io", "kubernetes.io/hostname", metav1.LabelSelectorOpIn, []string{"virt-operator"})
-	name := "virt-operator"
-	version = AddVersionSeparatorPrefix(version)
+	name := "virt-operator-debug"
+	//version = AddVersionSeparatorPrefix(version)
+	version = ":devel"
 	image := fmt.Sprintf("%s/%s%s%s", repository, imagePrefix, name, version)
 
 	deployment := &appsv1.Deployment{
@@ -598,7 +599,14 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 							Image:           image,
 							ImagePullPolicy: pullPolicy,
 							Command: []string{
-								"virt-operator",
+								"dlv",
+								"exec",
+								"/usr/bin/virt-operator",
+								"--listen=:40000",
+								"--headless=true",
+								"--api-version=2",
+								"--accept-multiclient",
+								"--",
 								"--port",
 								"8443",
 								"-v",
@@ -615,20 +623,11 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 									Protocol:      corev1.ProtocolTCP,
 									ContainerPort: 8444,
 								},
-							},
-							ReadinessProbe: &corev1.Probe{
-								Handler: corev1.Handler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Scheme: corev1.URISchemeHTTPS,
-										Port: intstr.IntOrString{
-											Type:   intstr.Int,
-											IntVal: 8443,
-										},
-										Path: "/metrics",
-									},
+								{
+									Name:          "dlv",
+									Protocol:      corev1.ProtocolTCP,
+									ContainerPort: 40000,
 								},
-								InitialDelaySeconds: 5,
-								TimeoutSeconds:      10,
 							},
 							Env: []corev1.EnvVar{
 								{
