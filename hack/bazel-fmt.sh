@@ -26,9 +26,9 @@ source hack/config.sh
 bazel run \
     --config=${HOST_ARCHITECTURE} \
     //vendor/mvdan.cc/sh/v3/cmd/shfmt:shfmt -- -i 4 -w ${KUBEVIRT_DIR}/hack/ ${KUBEVIRT_DIR}/images/
-bazel run \
-    --config=${HOST_ARCHITECTURE} \
-    //:gazelle -- pkg/ tools/ tests/ cmd/
+#bazel run \
+#    --config=${HOST_ARCHITECTURE} \
+#    //:gazelle -- pkg/ tools/ tests/ cmd/
 bazel run \
     --config=${HOST_ARCHITECTURE} \
     //:goimports

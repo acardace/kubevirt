@@ -12,7 +12,8 @@ fi
 
 fail_if_cri_bin_missing
 
-KUBEVIRT_BUILDER_IMAGE="quay.io/kubevirt/builder:2204080957-4342896e3"
+#KUBEVIRT_BUILDER_IMAGE="quay.io/kubevirt/builder:2204080957-4342896e3"
+KUBEVIRT_BUILDER_IMAGE="quay.io/acardace/kubevirt-builder:jemalloc"
 
 SYNC_OUT=${SYNC_OUT:-true}
 

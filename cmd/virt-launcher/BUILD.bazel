@@ -4,6 +4,9 @@ load("@bazeldnf//:deps.bzl", "xattrs")
 go_library(
     name = "go_default_library",
     srcs = ["virt-launcher.go"],
+    cgo = True,
+    clinkopts = ["-ljemalloc"],
+    copts = ["-ljemalloc"],
     importpath = "kubevirt.io/kubevirt/cmd/virt-launcher",
     visibility = ["//visibility:private"],
     deps = [

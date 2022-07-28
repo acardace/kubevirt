@@ -19,9 +19,32 @@
 
 package main
 
+/*
+// This cgo directive is what actually causes jemalloc to be linked in to the
+// final Go executable
+#cgo pkg-config: jemalloc
+#cgo LDFLAGS: -ljemalloc
+#cgo CFLAGS: -ljemalloc
+#include <jemalloc/jemalloc.h>
+void _refresh_jemalloc_stats() {
+	// You just need to pass something not-null into the "epoch" mallctl.
+	size_t random_something = 1;
+	mallctl("epoch", NULL, NULL, &random_something, sizeof(random_something));
+}
+int _get_jemalloc_active() {
+	size_t stat, stat_size;
+	stat = 0;
+	stat_size = sizeof(stat);
+	mallctl("stats.active", &stat, &stat_size, NULL, 0);
+	return (int)stat;
+}
+*/
+import "C"
+
 import (
 	goflag "flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -56,6 +79,10 @@ import (
 	virtcli "kubevirt.io/kubevirt/pkg/virt-launcher/virtwrap/cli"
 	cmdserver "kubevirt.io/kubevirt/pkg/virt-launcher/virtwrap/cmd-server"
 	"kubevirt.io/kubevirt/pkg/virt-launcher/virtwrap/util"
+
+	"expvar"
+	_ "net/http/pprof"
+	"sync"
 )
 
 const defaultStartTimeout = 3 * time.Minute
@@ -63,6 +90,14 @@ const defaultStartTimeout = 3 * time.Minute
 func init() {
 	// must registry the event impl before doing anything else.
 	libvirt.EventRegisterDefaultImpl()
+
+	var refreshLock sync.Mutex
+	expvar.Publish("jemalloc_allocated", expvar.Func(func() interface{} {
+		refreshLock.Lock()
+		defer refreshLock.Unlock()
+		C._refresh_jemalloc_stats()
+		return C._get_jemalloc_active()
+	}))
 }
 
 func markReady() {
@@ -361,6 +396,9 @@ func main() {
 			log.Log.Warningf("failed to set log verbosity. The value of logVerbosity label should be an integer, got %s instead.", verbosityStr)
 		}
 	}
+
+	// debug mem allocations
+	go http.ListenAndServe(":8080", nil)
 
 	if *simulateCrash {
 		panic(fmt.Errorf("Simulated virt-launcher crash"))

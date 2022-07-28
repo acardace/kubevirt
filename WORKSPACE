@@ -3365,6 +3365,22 @@ rpm(
 )
 
 rpm(
+    name = "jemalloc-5.2.1-2.el8.x86_64",
+    sha256 = "cc87c19a70c1776cc1d074194a804bc7cc2a10ad2890fb626bce4d5d79ff900c",
+    urls = [
+        "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/j/jemalloc-5.2.1-2.el8.x86_64.rpm",
+    ],
+)
+
+rpm(
+    name = "jemalloc-devel-5.2.1-2.el8.x86_64",
+    sha256 = "a2d2cc862b8cf89c4a12f925d06de293cd454ddb3cd9749cdd6b820b1ffdb69e",
+    urls = [
+        "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/j/jemalloc-devel-5.2.1-2.el8.x86_64.rpm",
+    ],
+)
+
+rpm(
     name = "lua-libs-0__5.3.4-12.el8.aarch64",
     sha256 = "2ef9801e4453de316429be284d4f6cb12f4d7662e7c6224dbf2341e3cfc5fab6",
     urls = [
