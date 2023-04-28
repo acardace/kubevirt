@@ -269,6 +269,20 @@ type VirtualMachineInstanceStatus struct {
 	// SELinuxContext is the actual SELinux context of the virt-launcher pod
 	// +optional
 	SelinuxContext string `json:"selinuxContext,omitempty"`
+
+	// Reflects the memory available for guest
+	// +optional
+	Memory *MemoryStatus `json:"memory,omitempty"`
+}
+
+type MemoryStatus struct {
+	// Guest allows to specifying the amount of memory which is visible inside the Guest OS.
+	// The Guest must lie between Requests and Limits from the resources section.
+	// Defaults to the requested memory in the resources section if not specified.
+	// + optional
+	Guest *resource.Quantity `json:"guest,omitempty"`
+	// RequestedGuest represents what amount of the memory a guest should have.
+	RequestedGuest *resource.Quantity `json:"requestedGuest,omitempty"`
 }
 
 // PersistentVolumeClaimInfo contains the relavant information virt-handler needs cached about a PVC

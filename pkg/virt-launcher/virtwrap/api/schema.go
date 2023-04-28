@@ -189,6 +189,7 @@ type DomainSpec struct {
 	Name           string          `xml:"name"`
 	UUID           string          `xml:"uuid,omitempty"`
 	Memory         Memory          `xml:"memory"`
+	MaxMemory      *MaxMemory      `xml:"maxMemory"`
 	MemoryBacking  *MemoryBacking  `xml:"memoryBacking,omitempty"`
 	OS             OS              `xml:"os"`
 	SysInfo        *SysInfo        `xml:"sysinfo,omitempty"`
@@ -406,6 +407,12 @@ type Memory struct {
 	Unit  string `xml:"unit,attr"`
 }
 
+type MaxMemory struct {
+	Value uint64 `xml:",chardata"`
+	Unit  string `xml:"unit,attr"`
+	Slots uint64 `xml:"slots,attr"`
+}
+
 // MemoryBacking mirroring libvirt XML under https://libvirt.org/formatdomain.html#elementsMemoryBacking
 type MemoryBacking struct {
 	HugePages    *HugePages           `xml:"hugepages,omitempty"`
@@ -448,6 +455,22 @@ type MemoryBackingAccess struct {
 type NoSharePages struct {
 }
 
+type MemoryTarget struct {
+	Size      Memory `xml:"size"`
+	Requested Memory `xml:"requested"`
+	Current   Memory `xml:"current"`
+	Node      string `xml:"node"`
+	Block     Memory `xml:"block"`
+}
+
+type MemoryDevice struct {
+	XMLName xml.Name      `xml:"memory"`
+	Model   string        `xml:"model,attr"`
+	Target  *MemoryTarget `xml:"target"`
+	Alias   *Alias        `xml:"alias,omitempty"`
+	Address *Address      `xml:"address,omitempty"`
+}
+
 type Devices struct {
 	Emulator    string             `xml:"emulator,omitempty"`
 	Interfaces  []Interface        `xml:"interface"`
@@ -468,6 +491,7 @@ type Devices struct {
 	SoundCards  []SoundCard        `xml:"sound,omitempty"`
 	TPMs        []TPM              `xml:"tpm,omitempty"`
 	VSOCK       *VSOCK             `xml:"vsock,omitempty"`
+	Memory      *MemoryDevice      `xml:"memory,omitempty"`
 }
 
 type TPM struct {

@@ -370,6 +370,8 @@ type Memory struct {
 	// Defaults to the requested memory in the resources section if not specified.
 	// + optional
 	Guest *resource.Quantity `json:"guest,omitempty"`
+	// RequestedGuest represents what amount of the memory a guest should have.
+	RequestedGuest *resource.Quantity `json:"requestedGuest,omitempty"`
 }
 
 // Hugepages allow to use hugepages for the VirtualMachineInstance instead of regular memory.

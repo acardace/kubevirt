@@ -1372,8 +1372,46 @@ func Convert_v1_VirtualMachineInstance_To_api_Domain(vmi *v1.VirtualMachineInsta
 		}
 	}
 
-	if domain.Spec.Memory, err = vcpu.QuantityToByte(*vcpu.GetVirtualMemory(vmi)); err != nil {
+	mem, err := vcpu.QuantityToByte(*vcpu.GetVirtualMemory(vmi))
+	if err != nil {
 		return err
+	}
+
+	domain.Spec.MaxMemory = &api.MaxMemory{
+		Unit:  mem.Unit,
+		Value: mem.Value * 2,
+		Slots: 1,
+	}
+
+	domain.Spec.CPU.NUMA = &api.NUMA{
+		Cells: []api.NUMACell{
+			{
+				ID:     "0",
+				CPUs:   fmt.Sprintf("0-%d", domain.Spec.VCPU.CPUs-1),
+				Memory: uint64(mem.Value / uint64(1024)),
+				Unit:   "KiB",
+			},
+		},
+	}
+
+	maxSize := api.Memory{Unit: mem.Unit, Value: mem.Value}
+
+	domain.Spec.Devices.Memory = &api.MemoryDevice{
+		Model: "virtio-mem",
+		Target: &api.MemoryTarget{
+			Size:      maxSize,
+			Requested: api.Memory{Unit: mem.Unit, Value: 0},
+			Node:      "0",
+			Block:     api.Memory{Unit: "MiB", Value: 2},
+		},
+	}
+
+	if vmi.Spec.Domain.Memory.RequestedGuest != nil {
+		reqMemory, err := vcpu.QuantityToByte(*vmi.Spec.Domain.Memory.RequestedGuest)
+		if err != nil {
+			return err
+		}
+		domain.Spec.Devices.Memory.Target.Requested = reqMemory
 	}
 
 	var isMemfdRequired = false

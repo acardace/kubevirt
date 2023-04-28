@@ -5831,6 +5831,14 @@ var CRDsValidation map[string]string = map[string]string{
                                 x86_64 architecture valid values are 1Gi and 2Mi.
                               type: string
                           type: object
+                        requestedGuest:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: RequestedGuest represents what amount of the
+                            memory a guest should have.
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
                       type: object
                     resources:
                       description: Resources describes the Compute Resources required
@@ -10083,6 +10091,14 @@ var CRDsValidation map[string]string = map[string]string{
                         architecture valid values are 1Gi and 2Mi.
                       type: string
                   type: object
+                requestedGuest:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  description: RequestedGuest represents what amount of the memory
+                    a guest should have.
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
               type: object
             resources:
               description: Resources describes the Compute Resources required by this
@@ -11083,6 +11099,28 @@ var CRDsValidation map[string]string = map[string]string{
           description: LauncherContainerImageVersion indicates what container image
             is currently active for the vmi.
           type: string
+        memory:
+          description: Reflects the memory available for guest
+          properties:
+            guest:
+              anyOf:
+              - type: integer
+              - type: string
+              description: Guest allows to specifying the amount of memory which is
+                visible inside the Guest OS. The Guest must lie between Requests and
+                Limits from the resources section. Defaults to the requested memory
+                in the resources section if not specified.
+              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+              x-kubernetes-int-or-string: true
+            requestedGuest:
+              anyOf:
+              - type: integer
+              - type: string
+              description: RequestedGuest represents what amount of the memory a guest
+                should have.
+              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+              x-kubernetes-int-or-string: true
+          type: object
         migrationMethod:
           description: 'Represents the method using which the vmi can be migrated:
             live migration or block migration'
@@ -12603,6 +12641,14 @@ var CRDsValidation map[string]string = map[string]string{
                         architecture valid values are 1Gi and 2Mi.
                       type: string
                   type: object
+                requestedGuest:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  description: RequestedGuest represents what amount of the memory
+                    a guest should have.
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
               type: object
             resources:
               description: Resources describes the Compute Resources required by this
@@ -14750,6 +14796,14 @@ var CRDsValidation map[string]string = map[string]string{
                                 x86_64 architecture valid values are 1Gi and 2Mi.
                               type: string
                           type: object
+                        requestedGuest:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: RequestedGuest represents what amount of the
+                            memory a guest should have.
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
                       type: object
                     resources:
                       description: Resources describes the Compute Resources required
@@ -18766,6 +18820,14 @@ var CRDsValidation map[string]string = map[string]string{
                                         are 1Gi and 2Mi.
                                       type: string
                                   type: object
+                                requestedGuest:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  description: RequestedGuest represents what amount
+                                    of the memory a guest should have.
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
                               type: object
                             resources:
                               description: Resources describes the Compute Resources
@@ -23506,6 +23568,14 @@ var CRDsValidation map[string]string = map[string]string{
                                             are 1Gi and 2Mi.
                                           type: string
                                       type: object
+                                    requestedGuest:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: RequestedGuest represents what
+                                        amount of the memory a guest should have.
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 resources:
                                   description: Resources describes the Compute Resources

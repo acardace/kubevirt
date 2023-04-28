@@ -865,6 +865,7 @@ func (l *LibvirtDomainManager) SyncVMI(vmi *v1.VirtualMachineInstance, allowEmul
 		return nil, err
 	}
 
+	logger.Info("ANTONIO doing api domain update")
 	if err := converter.Convert_v1_VirtualMachineInstance_To_api_Domain(vmi, domain, c); err != nil {
 		logger.Error("Conversion failed.")
 		return nil, err
@@ -944,6 +945,26 @@ func (l *LibvirtDomainManager) SyncVMI(vmi *v1.VirtualMachineInstance, allowEmul
 	if err != nil {
 		logger.Reason(err).Error("Parsing domain XML failed.")
 		return nil, err
+	}
+
+	// Hotplug memory
+	if domain.Spec.Devices.Memory.Target.Requested !=
+		oldSpec.Devices.Memory.Target.Requested {
+		logger.V(2).Infof("hotplugging memory: %+v", domain.Spec.Devices.Memory.Target.Requested)
+
+		oldSpec.Devices.Memory.Target.Requested = domain.Spec.Devices.Memory.Target.Requested
+		memoryDevice, err := xml.Marshal(oldSpec.Devices.Memory)
+		if err != nil {
+			logger.Reason(err).Error("marshalling target virtio-mem failed")
+			return nil, err
+		}
+
+		fmt.Println(strings.ToLower(string(memoryDevice)))
+		err = dom.UpdateDeviceFlags(strings.ToLower(string(memoryDevice)), libvirt.DOMAIN_DEVICE_MODIFY_LIVE)
+		if err != nil {
+			logger.Reason(err).Error("updating device")
+			return nil, err
+		}
 	}
 
 	// Look up all the disks to detach

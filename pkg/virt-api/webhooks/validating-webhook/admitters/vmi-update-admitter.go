@@ -50,6 +50,10 @@ func (admitter *VMIUpdateAdmitter) Admit(ar *admissionv1.AdmissionReview) *admis
 		return webhookutils.ToAdmissionResponseError(err)
 	}
 
+	if newVMI.Spec.Domain.Memory != nil && newVMI.Spec.Domain.Memory.RequestedGuest != nil {
+		return &admissionv1.AdmissionResponse{Allowed: true}
+	}
+
 	// Reject VMI update if VMI spec changed
 	if !equality.Semantic.DeepEqual(newVMI.Spec, oldVMI.Spec) {
 		// Only allow the KubeVirt SA to modify the VMI spec, since that means it went through the sub resource.

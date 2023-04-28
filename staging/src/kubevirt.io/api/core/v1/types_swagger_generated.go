@@ -77,6 +77,14 @@ func (VirtualMachineInstanceStatus) SwaggerDoc() map[string]string {
 		"runtimeUser":                   "RuntimeUser is used to determine what user will be used in launcher\n+optional",
 		"VSOCKCID":                      "VSOCKCID is used to track the allocated VSOCK CID in the VM.\n+optional",
 		"selinuxContext":                "SELinuxContext is the actual SELinux context of the virt-launcher pod\n+optional",
+		"memory":                        "Reflects the memory available for guest\n+optional",
+	}
+}
+
+func (MemoryStatus) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"guest":          "Guest allows to specifying the amount of memory which is visible inside the Guest OS.\nThe Guest must lie between Requests and Limits from the resources section.\nDefaults to the requested memory in the resources section if not specified.\n+ optional",
+		"requestedGuest": "RequestedGuest represents what amount of the memory a guest should have.",
 	}
 }
 

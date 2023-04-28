@@ -53,6 +53,7 @@ import (
 
 	k8sv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -1298,6 +1299,22 @@ func (d *VirtualMachineController) updateVMIStatus(origVMI *v1.VirtualMachineIns
 		return err
 	}
 	d.updatePausedConditions(vmi, domain, condManager)
+
+	if domain != nil {
+		if vmi.Status.Memory == nil {
+			vmi.Status.Memory = &v1.MemoryStatus{}
+		}
+
+		value := domain.Spec.Memory.Value
+		observedMemory := resource.NewQuantity(int64(value), resource.BinarySI)
+
+		if vmi.Status.Memory.Guest == nil || vmi.Status.Memory.Guest != observedMemory {
+			vmi.Status.Memory.Guest = observedMemory
+		}
+		if vmi.Spec.Domain.Memory.RequestedGuest != nil {
+			vmi.Status.Memory.RequestedGuest = vmi.Spec.Domain.Memory.RequestedGuest
+		}
+	}
 
 	// Handle sync error
 	var criticalNetErr *neterrors.CriticalNetworkError
@@ -2768,6 +2785,7 @@ func (d *VirtualMachineController) configureHousekeepingCgroup(vmi *v1.VirtualMa
 }
 
 func (d *VirtualMachineController) vmUpdateHelperDefault(origVMI *v1.VirtualMachineInstance, domainExists bool) error {
+
 	client, err := d.getLauncherClient(origVMI)
 	if err != nil {
 		return fmt.Errorf(unableCreateVirtLauncherConnectionFmt, err)
