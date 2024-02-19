@@ -57,7 +57,7 @@ var _ = Describe("[sig-compute][Serial]Memory Hotplug", decorators.SigCompute, d
 
 	Context("A VM with memory liveUpdate enabled", func() {
 
-		createHotplugVM := func(guest, maxGuest *resource.Quantity, sockets *uint32, maxSockets uint32) (*v1.VirtualMachine, *v1.VirtualMachineInstance) {
+		createHotplugVM := func(guest *resource.Quantity, sockets *uint32) (*v1.VirtualMachine, *v1.VirtualMachineInstance) {
 			vmi := libvmi.NewAlpineWithTestTooling(
 				libnet.WithMasqueradeNetworking()...,
 			)
@@ -73,11 +73,6 @@ var _ = Describe("[sig-compute][Serial]Memory Hotplug", decorators.SigCompute, d
 			}
 
 			vm := libvmi.NewVirtualMachine(vmi, libvmi.WithRunning())
-			vm.Spec.Template.Spec.Domain.Memory.MaxGuest = maxGuest
-			if maxSockets != 0 {
-				vm.Spec.Template.Spec.Domain.CPU.MaxSockets = maxSockets
-			}
-
 			vm, err := virtClient.VirtualMachine(vm.Namespace).Create(context.Background(), vm)
 			ExpectWithOffset(1, err).ToNot(HaveOccurred())
 			EventuallyWithOffset(1, ThisVM(vm), 360*time.Second, 1*time.Second).Should(beReady())
@@ -98,7 +93,7 @@ var _ = Describe("[sig-compute][Serial]Memory Hotplug", decorators.SigCompute, d
 			By("Creating a VM")
 			guest := resource.MustParse("128Mi")
 			maxGuest := resource.MustParse("256Mi")
-			vm, vmi := createHotplugVM(&guest, &maxGuest, nil, 0)
+			vm, vmi := createHotplugVM(&guest, nil)
 
 			By("Limiting the bandwidth of migrations in the test namespace")
 			migrationBandwidthLimit := resource.MustParse("1Ki")
@@ -159,8 +154,7 @@ var _ = Describe("[sig-compute][Serial]Memory Hotplug", decorators.SigCompute, d
 		It("[test_id:10824]after a hotplug memory and a restart the new memory value should be the base for the VM", func() {
 			By("Creating a VM")
 			guest := resource.MustParse("128Mi")
-			maxGuest := resource.MustParse("512Mi")
-			vm, vmi := createHotplugVM(&guest, &maxGuest, nil, 0)
+			vm, vmi := createHotplugVM(&guest, nil)
 
 			By("Hotplug 128Mi of memory")
 			newGuestMemory := resource.MustParse("256Mi")
@@ -200,9 +194,8 @@ var _ = Describe("[sig-compute][Serial]Memory Hotplug", decorators.SigCompute, d
 		It("[test_id:10825]should successfully hotplug Memory and CPU in parallel", func() {
 			By("Creating a VM")
 			guest := resource.MustParse("128Mi")
-			maxGuest := resource.MustParse("512Mi")
 			newSockets := uint32(2)
-			vm, vmi := createHotplugVM(&guest, &maxGuest, pointer.P(uint32(1)), newSockets)
+			vm, vmi := createHotplugVM(&guest, pointer.P(uint32(1)))
 
 			By("Hotplug Memory and CPU")
 			newGuestMemory := resource.MustParse("256Mi")
