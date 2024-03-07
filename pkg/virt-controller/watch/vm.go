@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"kubevirt.io/kubevirt/pkg/hotplug"
 	"kubevirt.io/kubevirt/pkg/network/namescheme"
 	"kubevirt.io/kubevirt/pkg/virt-controller/services"
 
@@ -296,19 +297,21 @@ func (c *VMController) execute(key string) error {
 		c.expectations.DeleteExpectations(key)
 		return nil
 	}
-	vm := obj.(*virtv1.VirtualMachine)
-	vm = vm.DeepCopy()
 
-	logger := log.Log.Object(vm)
+	vmUpdater := newVMUpdater(obj.(*virtv1.VirtualMachine))
+
+	logger := log.Log.Object(vmUpdater.VirtualMachine)
 
 	logger.V(4).Info("Started processing vm")
 
 	// this must be first step in execution. Writing the object
 	// when api version changes ensures our api stored version is updated.
-	if !controller.ObservedLatestApiVersionAnnotation(vm) {
-		vm := vm.DeepCopy()
-		controller.SetLatestApiVersionAnnotation(vm)
-		_, err = c.clientset.VirtualMachine(vm.Namespace).Update(context.Background(), vm)
+	if !controller.ObservedLatestApiVersionAnnotation(vmUpdater.VirtualMachine) {
+		vmUpdater.update(func(vm *virtv1.VirtualMachine) *virtv1.VirtualMachine {
+			controller.SetLatestApiVersionAnnotation(vm)
+			vm, err = c.clientset.VirtualMachine(vmUpdater.Namespace).Update(context.Background(), vmUpdater.VirtualMachine)
+			return vm
+		})
 
 		if err != nil {
 			logger.Reason(err).Error("Updating api version annotations failed")
@@ -317,7 +320,7 @@ func (c *VMController) execute(key string) error {
 		return err
 	}
 
-	vmKey, err := controller.KeyFunc(vm)
+	vmKey, err := controller.KeyFunc(vmUpdater.VirtualMachine)
 	if err != nil {
 		return err
 	}
@@ -325,11 +328,11 @@ func (c *VMController) execute(key string) error {
 	// If any adoptions are attempted, we should first recheck for deletion with
 	// an uncached quorum read sometime after listing VirtualMachines (see kubernetes/kubernetes#42639).
 	canAdoptFunc := controller.RecheckDeletionTimestamp(func() (v1.Object, error) {
-		fresh, err := c.clientset.VirtualMachine(vm.ObjectMeta.Namespace).Get(context.Background(), vm.ObjectMeta.Name, &v1.GetOptions{})
+		fresh, err := c.clientset.VirtualMachine(vmUpdater.Namespace).Get(context.Background(), vmUpdater.ObjectMeta.Name, &v1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
-		if fresh.ObjectMeta.UID != vm.ObjectMeta.UID {
+		if fresh.ObjectMeta.UID != vmUpdater.ObjectMeta.UID {
 			return nil, fmt.Errorf("original VirtualMachine %v/%v is gone: got uid %v, wanted %v", vm.Namespace, vm.Name, fresh.UID, vm.UID)
 		}
 		return fresh, nil
@@ -3055,6 +3058,7 @@ func (c *VMController) sync(vm *virtv1.VirtualMachine, vmi *virtv1.VirtualMachin
 		}
 
 		if syncErr == nil {
+            if !equality.Semantic.DeepEqual(vm.Spec, vmCopy.Spec) || !equality.Semantic.DeepEqual(vm.ObjectMeta, vmCopy.ObjectMeta)
 			if !equality.Semantic.DeepEqual(vm, vmCopy) {
 				vm, err = c.clientset.VirtualMachine(vmCopy.Namespace).Update(context.Background(), vmCopy)
 				if err != nil {
@@ -3150,6 +3154,9 @@ func (c *VMController) handleMemoryHotplugRequest(vm *virtv1.VirtualMachine, vmi
 
 	if vmi.Status.Memory == nil ||
 		vmi.Status.Memory.GuestCurrent == nil ||
+		guestMemory == nil ||
+		vmi.Spec.Domain.Memory.MaxGuest == nil ||
+		vm.Spec.Template.Spec.Domain.Memory.Guest == nil ||
 		vm.Spec.Template.Spec.Domain.Memory.Guest.Equal(*guestMemory) {
 		return nil
 	}
@@ -3164,8 +3171,7 @@ func (c *VMController) handleMemoryHotplugRequest(vm *virtv1.VirtualMachine, vmi
 		return fmt.Errorf("memory hotplug is not allowed while VMI is migrating")
 	}
 
-	if vm.Spec.Template.Spec.Domain.Memory.Guest != nil && vmi.Status.Memory.GuestAtBoot != nil &&
-		vm.Spec.Template.Spec.Domain.Memory.Guest.Cmp(*vmi.Status.Memory.GuestAtBoot) == -1 {
+	if vmi.Status.Memory.GuestAtBoot != nil && vm.Spec.Template.Spec.Domain.Memory.Guest.Cmp(*vmi.Status.Memory.GuestAtBoot) == -1 {
 		vmConditions := controller.NewVirtualMachineConditionManager()
 		vmConditions.UpdateCondition(vm, &virtv1.VirtualMachineCondition{
 			Type:               virtv1.VirtualMachineRestartRequired,
@@ -3179,14 +3185,29 @@ func (c *VMController) handleMemoryHotplugRequest(vm *virtv1.VirtualMachine, vmi
 	// If the following is true, MaxGuest was calculated, not manually specified (or the validation webhook would have rejected the change).
 	// Since we're here, we can also assume MaxGuest was not changed in the VM spec since last boot.
 	// Therefore, bumping Guest to a value higher than MaxGuest is fine, it just requires a reboot.
-	if vm.Spec.Template.Spec.Domain.Memory.Guest != nil && vmi.Spec.Domain.Memory.MaxGuest != nil &&
-		vm.Spec.Template.Spec.Domain.Memory.Guest.Cmp(*vmi.Spec.Domain.Memory.MaxGuest) == 1 {
+	if vm.Spec.Template.Spec.Domain.Memory.Guest.Cmp(*vmi.Spec.Domain.Memory.MaxGuest) == 1 {
 		vmConditions := controller.NewVirtualMachineConditionManager()
 		vmConditions.UpdateCondition(vm, &virtv1.VirtualMachineCondition{
 			Type:               virtv1.VirtualMachineRestartRequired,
 			LastTransitionTime: v1.Now(),
 			Status:             k8score.ConditionTrue,
 			Message:            "memory updated in template spec to a value higher than what's available",
+		})
+		return nil
+	}
+
+	if causes := hotplug.ValidateMemoryHotplug(&vm.Spec.Template.Spec); len(causes) > 1 {
+		errMsgs := make([]string, 0, len(causes))
+		for _, cause := range causes {
+			errMsgs = append(errMsgs, cause.Message)
+		}
+
+		vmConditions := controller.NewVirtualMachineConditionManager()
+		vmConditions.UpdateCondition(vm, &virtv1.VirtualMachineCondition{
+			Type:               virtv1.VirtualMachineRestartRequired,
+			LastTransitionTime: v1.Now(),
+			Status:             k8score.ConditionTrue,
+			Message:            strings.Join(errMsgs, ", "),
 		})
 		return nil
 	}

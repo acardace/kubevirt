@@ -1904,12 +1904,11 @@ var _ = Describe("Validating VM Admitter", func() {
 			})
 		})
 
-		Context("Memory", func() {
-			var maxGuest resource.Quantity
+		Context("Memory Hotplug", func() {
 
-			BeforeEach(func() {
+			DescribeTable("should reject VM creation if", func(vmSetup func(*v1.VirtualMachine), cause metav1.StatusCause) {
+				maxGuest := resource.MustParse("128Mi")
 				guest := resource.MustParse("64Mi")
-				maxGuest = resource.MustParse("128Mi")
 
 				vm.Spec.Template.Spec.Domain.Memory = &v1.Memory{
 					Guest:    &guest,
@@ -1919,9 +1918,7 @@ var _ = Describe("Validating VM Admitter", func() {
 				vm.Spec.Template.Spec.Domain.Resources.Limits = nil
 				vm.Spec.Template.Spec.Domain.Resources.Requests = nil
 				vm.Status.Ready = true
-			})
 
-			DescribeTable("should reject VM creation if", func(vmSetup func(*v1.VirtualMachine), cause metav1.StatusCause) {
 				vmSetup(vm)
 
 				response := admitVm(vmsAdmitter, vm)
@@ -2001,7 +1998,7 @@ var _ = Describe("Validating VM Admitter", func() {
 					Message: "Guest memory must be configured when memory hotplug is enabled",
 				}),
 				Entry("guest memory is greater than maxGuest", func(vm *v1.VirtualMachine) {
-					moreThanMax := maxGuest.DeepCopy()
+					moreThanMax := vm.Spec.Template.Spec.Domain.Memory.MaxGuest.DeepCopy()
 					moreThanMax.Add(resource.MustParse("16Mi"))
 
 					vm.Spec.Template.Spec.Domain.Memory.Guest = &moreThanMax

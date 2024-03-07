@@ -1,0 +1,32 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  labels:
+    kubevirt.io/vm: vm-cirros
+  name: vm-cirros
+spec:
+  running: true
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: vm-cirros
+    spec:
+      domain:
+        memory:
+          guest: 128Mi
+        devices:
+          disks:
+          - disk:
+              bus: virtio
+            name: containerdisk
+          interfaces:
+          - masquerade: {}
+            name: default
+      networks:
+      - name: default
+        pod: {}
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - containerDisk:
+          image: registry:5000/kubevirt/alpine-container-disk-demo:devel
+        name: containerdisk
