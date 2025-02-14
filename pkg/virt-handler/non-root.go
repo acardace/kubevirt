@@ -96,14 +96,14 @@ func changeOwnershipOfHostDisks(vmiWithAllPVCs *v1.VirtualMachineInstance, res i
 	return nil
 }
 
-func (c *VirtualMachineController) prepareStorage(vmi *v1.VirtualMachineInstance, res isolation.IsolationResult) error {
+func (c *BaseController) prepareStorage(vmi *v1.VirtualMachineInstance, res isolation.IsolationResult) error {
 	if err := changeOwnershipOfBlockDevices(vmi, res); err != nil {
 		return err
 	}
 	return changeOwnershipOfHostDisks(vmi, res)
 }
 
-func (*VirtualMachineController) prepareVFIO(res isolation.IsolationResult) error {
+func (*BaseController) prepareVFIO(res isolation.IsolationResult) error {
 	vfioBasePath, err := isolation.SafeJoin(res, "dev", "vfio")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -145,12 +145,12 @@ func (*VirtualMachineController) prepareVFIO(res isolation.IsolationResult) erro
 	return nil
 }
 
-func (c *VirtualMachineController) nonRootSetup(origVMI *v1.VirtualMachineInstance) error {
-	res, err := c.podIsolationDetector.Detect(origVMI)
+func (c *BaseController) nonRootSetup(vmi *v1.VirtualMachineInstance) error {
+	res, err := c.podIsolationDetector.Detect(vmi)
 	if err != nil {
 		return err
 	}
-	if err := c.prepareStorage(origVMI, res); err != nil {
+	if err := c.prepareStorage(vmi, res); err != nil {
 		return err
 	}
 	if err := c.prepareVFIO(res); err != nil {

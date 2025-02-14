@@ -4,8 +4,11 @@ load("@kubevirt//tools/ginkgo:ginkgo.bzl", "ginkgo_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "controller.go",
         "guestagent.go",
         "migration.go",
+        "migration-source.go",
+        "migration-target.go",
         "non-root.go",
         "options.go",
         "realtime.go",
@@ -47,6 +50,7 @@ go_library(
         "//pkg/virt-handler/heartbeat:go_default_library",
         "//pkg/virt-handler/hotplug-disk:go_default_library",
         "//pkg/virt-handler/isolation:go_default_library",
+        "//pkg/virt-handler/launcher-clients:go_default_library",
         "//pkg/virt-handler/migration-proxy:go_default_library",
         "//pkg/virt-handler/selinux:go_default_library",
         "//pkg/virt-launcher/virtwrap/api:go_default_library",
